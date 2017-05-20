@@ -7,6 +7,7 @@ from env_simu import *
 from drone import Drone
 
 def f(t, x, obj):
+    obj.run()
     return obj.get_dX()
 
 def main():
@@ -18,10 +19,9 @@ def main():
     z = []
     iimax = int(TFIN/DT)
     for ii in range(iimax):
-        angle = (pi/2.0)*float(ii)/float(iimax)
+        angle = pi/4.0
         drone.commande(100, 0, 0, 0, angle)
-        X = r.integrate(r.t + DT)
-        drone.set_X(X)
+        drone.set_X(r.integrate(r.t + DT))
         x.append(drone.get_pos_i().A1[0])
         y.append(drone.get_pos_i().A1[1])
         z.append(-drone.get_pos_i().A1[2])

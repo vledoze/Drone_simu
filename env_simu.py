@@ -53,3 +53,4 @@ def trot_matrix(att):
     r1 = np.array([1.0,  0.0, -stet])
     r2 = np.array([0.0,  cphi, sphi*ctet])
     r3 = np.array([0.0, -sphi, cphi*ctet])
+    return np.matrix([r1, r2, r3])
