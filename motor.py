@@ -6,70 +6,104 @@
 from env_simu import *
 
 class Motor(object):
-    """
+    """ Classe Motor : Definition d'un moteur
     """
     
-    def __init__(self, l, e, y, h, angle, sens):
+    def __init__(self, l, e, y, h, angle, sens_cap, sens_gite, sens_roulis):
+        """ Constructeur
+        """
         #Vecteur d'etat
-        self._w = 0.
+        self.__w = 0.
         #Derivee vecteur d'etat
-        self._dw = 0.
+        self.__dw = 0.
         #Position du moteur
-        self._l = l         #(l+e, y, h): position dans le repere drone a plat
-        self._e = e
-        self._h = h
-        self._pos = np.matrix([[0.], [y], [0.]])
-        self.angle_to_pos(angle)
+        self.__l = l         #(l+e, y, h): position dans le repere drone a plat
+        self.__e = e
+        self.__y = y
+        self.__h = h
+        self.__pos = np.matrix('0; 0; 0')
+        self.angle = angle
         #Dynamique
-        self._force = 0.
-        self._vforce = np.zeros(3)
-        self._moment = 0.
-        self._vmoment = np.zeros(3)
+        self.__force = 0.
+        self.__vforce = np.zeros(3)
+        self.__moment = 0.
+        self.__vmoment = np.zeros(3)
         #Caracteristiques mecaniques
-        self._inert  = 0.001     #inertie des helices
-        self._sens   = sens      #signe des vitesses de rotation des helices (-1, 1)
-        self._vitmax = 30000*D2R #vitesse max des moteurs (5000tr/min)
-        self._formax = 0.5*G     #force max a 500g de pousse
+        self.__inert  = 0.001     #inertie des helices
+        self.__vitmax = 30000*D2R #vitesse max des moteurs (5000tr/min)
+        self.__formax = 0.5*G     #force max a 500g de pousse
+        #sens de rotation
+        self.__sens_cap = sens_cap       #signe des vitesses de rotation des helices pour prise en compte du cap (-1, 1)
+        self.__sens_gite = sens_gite     #signe pour prise en compte du gite
+        self.__sens_roulis = sens_roulis #signe pour prise en compte du roulis
+    
+    @property
+    def angle(self):
+        """ Angle courant du bras moteur 
+        """
+        return self.__angle
+        
+    @angle.setter
+    def angle(self, angle):
+        """ Angle commande pour le bras moteur 
+        """
+        #angle d'inclinaison des moteurs (0: a plat | 90: vertical)
+        self.__angle  = minmax(angle, 0., 90.)
+        self.__pos[0] = self.__l + self.__e*cos(self.__angle) - self.__h*sin(self.__angle)
+        self.__pos[1] = self.__y
+        self.__pos[2] = self.__h*cos(self.__angle) + self.__e*sin(self.__angle)
 
-    def angle_to_pos(self, angle):
-        self._angle  = angle #angle d'inclinaison des moteurs (0: a plat | 90: vertical)
-        self._pos[0] = self._l + self._e*cos(self._angle) - self._h*sin(self._angle)
-        self._pos[2] = self._h*cos(self._angle) + self._e*sin(self._angle)
-
-    def commande(self, value, angle):
+    @property
+    def w(self):
+        """ Vitesse de rotation du moteur 
+        """
+        return self.__w
+    
+    @w.setter
+    def w(self, value):
+        """ Commande en vitesse en % de vitesse max
+        """
         #value est en pourcentage de puissance
-        value = value/100.
+        value = float(value)/100.
+        minmax(value, 0., 100.)
         #On fait tourner le moteur
-        self._dw = (self._vitmax*value - self._w)/DT #Derivee de la vitesse de rotation
-        self._w = self._vitmax*value #vitesse de rotation
-        #Position moteur
-        self.angle_to_pos(angle)
-
-    def mecanique(self):
+        self.__dw = (self.__vitmax*value - self.__w)/DT #Derivee de la vitesse de rotation
+        self.__w = self.__vitmax*value #vitesse de rotation
+    
+    @property
+    def sens_cap(self):
+        return self.__sens_cap
+    
+    @property 
+    def sens_roulis(self):
+        return self.__sens_roulis
+    
+    @property
+    def sens_gite(self):
+        return self.__sens_gite
+    
+    @property
+    def vforce(self):
+        """ Force generee par le moteur
+        """
         #Bilan mecanique moteur (force)
-        self._force = self._formax*self._w/self._vitmax
-        self._vforce = np.matrix(
-            [[self._force*sin(self._angle)],
+        self.__force = self.__formax*self.__w/self.__vitmax
+        self.__vforce = np.matrix(
+            [[self.__force*sin(self.__angle)],
              [0.],
-             [-self._force*cos(self._angle)]])
+             [-self.__force*cos(self.__angle)]])
+        return self.__vforce
+    
+    @property
+    def vmoment(self):
+        """ Moment generee par le moteur 
+        """
         #Bilan mecanique moteur (moment)
-        self._moment = self._sens*self._inert*self._dw
-        self._vmoment = np.matrix(
-            [[self._moment*cos(self._angle)],
+        self.__moment = self.__sens_cap*self.__inert*self.__dw
+        self.__vmoment = np.matrix(
+            [[self.__moment*cos(self.__angle)],
              [0.],
-             [self._moment*sin(self._angle)]])
-        self._vmoment = np.add(
-            self._vmoment,
-            np.cross(-self._pos, self._vforce, axis=0))
-
-    def get_sens(self):
-        return self._sens
-
-    def get_vforce(self):
-        return self._vforce
-
-    def get_vmoment(self):
-        return self._vmoment
-
-    def get_pos(self):
-        return self._pos
+             [self.__moment*sin(self.__angle)]])
+        self.__vmoment += np.cross(self.__pos, self.__vforce, axis=0)
+        return self.__vmoment
+        

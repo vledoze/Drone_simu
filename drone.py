@@ -15,7 +15,7 @@ class Drone (FlyObject):
         #Initialisation objet FlyObject
         FlyObject.__init__(self)
         #Donnees physique du drone
-        self._posg_d  = np.matrix([[0.], [0.], [0.]])   #Position du centre de gravite drone dans le repere drone
+        self._posg_d  = np.matrix('0.; 0.; 0.')   #Position du centre de gravite drone dans le repere drone
         #Motorisation du drone
         self._mixer = Mixer()                           #Ensemble des servos+moteurs embarques
 
@@ -29,10 +29,9 @@ class Drone (FlyObject):
         #Sommes des forces et moments dans le repere drone
         self._sum_forces = np.matrix(np.zeros([3, 1]))
         self._sum_moments = np.matrix(np.zeros([3, 1]))
-        for mot in self._mixer._motors:
-            mot.mecanique()
-            self._sum_forces += mot._vforce
-            self._sum_moments += mot._vmoment
+        for mot in self._mixer.motors.values():
+            self._sum_forces += mot.vforce
+            self._sum_moments += mot.vmoment
         self._sum_forces += forceg_d
         self._sum_moments += np.cross(-self._posg_d, forceg_d, axis=0)
 

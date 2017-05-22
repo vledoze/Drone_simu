@@ -54,3 +54,6 @@ def trot_matrix(att):
     r2 = np.array([0.0,  cphi, sphi*ctet])
     r3 = np.array([0.0, -sphi, cphi*ctet])
     return np.matrix([r1, r2, r3])
+   
+def minmax(val, minval, maxval):
+    return min(maxval, max(minval, val))
