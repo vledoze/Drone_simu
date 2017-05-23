@@ -13,38 +13,46 @@ class Mixer(object):
     """
 
     def __init__(self):
-        #Vecteur d'etat
-        self.__trottle = 0.     #Gaz
-        self.__roulis = 0.      #Angle de Roulis
-        self.__gite = 0.        #Angle de Gite
-        self.__cap = 0.         #Angle de Cap
-        self.__angle = 0.       #Angle de configuration (0: a plat | 90: vertical)
-        #Ensemble des moteurs
-        self.motors = {
-            "moteur_av_dr":Motor( 0.0, 0.1,  0.3, 0.025, self.__angle, 1, -1, 1),
-            "moteur_av_gch":Motor( 0.0, 0.1, -0.3, 0.025, self.__angle, -1, -1, -1),
-            "moteur_ar_dr":Motor(-0.2, 0.1,  0.3, 0.025, self.__angle, 1, 1, -1),
-            "moteur_ar_gch":Motor(-0.2, 0.1, -0.3, 0.025, self.__angle, -1, 1, 1)}
         #Ensemble des servomoteurs
-        self.servos = {
+        self.__servos = {
             "cap":Servo(),
-            "roulis1":Servo(),
-            "roulis2":Servo(),
+            "roulis":Servo(),
+            "gite":Servo(),
             "config":Servo()}
+        #Ensemble des moteurs
+        angle = self.__servos["config"].angle
+        self.__motors = {
+            "moteur_av_dr":Motor( 0.0, 0.1,  0.3, 0.025, angle, 1, -1, 1),
+            "moteur_av_gch":Motor( 0.0, 0.1, -0.3, 0.025, angle, -1, -1, -1),
+            "moteur_ar_dr":Motor(-0.2, 0.1,  0.3, 0.025, angle, 1, 1, -1),
+            "moteur_ar_gch":Motor(-0.2, 0.1, -0.3, 0.025, angle, -1, 1, 1)}
 
     def commande(self, trottle_co, roulis_co, gite_co, cap_co, angle_co):
         """ Commandes envoyees a l'ensemble moteur + servos
         """
         #commande des servo
-        # TODO 
-        self.servos["config"].angle = angle_co
+        self.__servos["cap"].angle = cap_co
+        self.__servos["roulis"].angle = roulis_co
+        self.__servos["gite"].angle = gite_co
+        self.__servos["config"].angle = angle_co
         #commande des moteurs
-        for mot in self.motors.values():
-            mot.angle = self.servos["config"].angle
-            mot.w = (trottle_co 
-                   + mot.sens_cap*cap_co 
-                   + mot.sens_gite*gite_co 
+        for mot in self.__motors.values():
+            mot.angle = self.__servos["config"].angle
+            mot.w = (trottle_co
+                   + mot.sens_cap*cap_co
+                   + mot.sens_gite*gite_co
                    + mot.sens_roulis*roulis_co)
 
-    def get_motor(self):
-        return self._motors
+    @property
+    def vforce(self):
+        sum_vforce = np.matrix("0.; 0.; 0.")
+        for mot in self.__motors.values():
+            sum_vforce += mot.vforce
+        return sum_vforce
+
+    @property
+    def vmoment(self):
+        sum_vmoment = np.matrix("0.; 0.; 0.")
+        for mot in self.__motors.values():
+            sum_vmoment += mot.vmoment
+        return sum_vmoment

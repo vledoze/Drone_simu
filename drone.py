@@ -22,18 +22,15 @@ class Drone (FlyObject):
     def mecanique(self):
         """ Equation de la dynamique pour le drone
         """
+        #Sommes des forces et moments dans le repere drone
+        self._sum_forces = self._mixer.vforce
+        self._sum_moments = self._mixer.vmoment
         #Influence de la gravite
-        forceg_i = np.matrix(np.zeros([3, 1]))
+        forceg_i = np.matrix("0.; 0.; 0.")
         forceg_i[2] = self._masse*G
         forceg_d = np.dot(self._Rmsi, forceg_i)
-        #Sommes des forces et moments dans le repere drone
-        self._sum_forces = np.matrix(np.zeros([3, 1]))
-        self._sum_moments = np.matrix(np.zeros([3, 1]))
-        for mot in self._mixer.motors.values():
-            self._sum_forces += mot.vforce
-            self._sum_moments += mot.vmoment
         self._sum_forces += forceg_d
-        self._sum_moments += np.cross(-self._posg_d, forceg_d, axis=0)
+        self._sum_moments += np.cross(self._posg_d, forceg_d, axis=0)
 
     def commande(self, throttle_co, roulis_co, gite_co, cap_co, angle_co ):
         self._mixer.commande(throttle_co, roulis_co, gite_co, cap_co, angle_co)
@@ -78,6 +75,3 @@ class Drone (FlyObject):
         for accr in self._accr_m:
             dX.append(accr)
         return dX
-
-    def get_mixer(self):
-        return self._mixer
